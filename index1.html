@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archiwum Plików, Zdjęć, Audio i Wideo</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding-bottom: 50px;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .search-box {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            width: 100%;
+            max-width: 320px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        #status {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .folder-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .folder-header {
+            background: #f1f5f9;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .folder-header:hover {
+            background: #e2e8f0;
+        }
+
+        .folder-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .folder-count {
+            background: var(--primary);
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+            padding: 1.5rem;
+        }
+
+        .files-grid.collapsed {
+            display: none;
+        }
+
+        .file-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .file-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+        }
+
+        .file-preview {
+            height: 150px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .file-preview img,
+        .file-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s;
+        }
+
+        .file-card:hover .file-preview img,
+        .file-card:hover .file-preview video {
+            transform: scale(1.04);
+        }
+
+        .media-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(15, 23, 42, 0.78);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .file-icon {
+            font-size: 3.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .file-ext-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .file-info {
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            word-break: break-word;
+            color: var(--text);
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+
+        .btn-view {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .btn-view:hover {
+            background: #dbeafe;
+        }
+
+        .btn-download {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: var(--primary-hover);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.92);
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-toolbar {
+            background: #1e293b;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1rem;
+            max-width: 400px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #0f172a;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+        }
+
+        .zoom-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: #475569;
+        }
+
+        .zoom-input {
+            width: 65px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 0.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        #modalImage {
+            transform-origin: center center;
+            transition: width 0.15s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: none;
+        }
+
+        #modalVideo {
+            max-width: 100%;
+            max-height: 85vh;
+            border-radius: 10px;
+            background: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .audio-player-box {
+            background: #1e293b;
+            color: white;
+            padding: 2rem;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+            border: 1px solid #334155;
+        }
+
+        .audio-player-box audio {
+            width: 100%;
+            margin-top: 1.25rem;
+        }
+
+        #modalIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+            border-radius: 8px;
+        }
+
+        #modalCsvContainer {
+            background: white;
+            color: var(--text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            max-width: 95%;
+            max-height: 90%;
+            overflow: auto;
+        }
+
+        table.csv-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        table.csv-table th, table.csv-table td {
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+
+        table.csv-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.45rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            background: #dc2626;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📂 Repo-Archiwum Plików</h1>
+    <input type="text" id="searchInput" class="search-box" placeholder="Szukaj pliku lub folderu...">
+</header>
+
+<div class="container">
+    <div id="status">Ładowanie zawartości repozytorium...</div>
+    <div id="content"></div>
+</div>
+
+<div id="previewModal" class="modal">
+    <div class="modal-toolbar">
+        <div class="modal-title" id="modalFileName">Nazwa pliku</div>
+        
+        <div class="zoom-controls" id="zoomControls" style="display: none;">
+            <button class="zoom-btn" onclick="changeZoom(-15)" title="Pomniejsz">-</button>
+            <input type="number" id="zoomPercent" class="zoom-input" value="100" min="10" max="500" onchange="setExactZoom(this.value)">
+            <span>%</span>
+            <button class="zoom-btn" onclick="changeZoom(15)" title="Powiększ">+</button>
+            <button class="zoom-btn" style="width: auto; padding: 0 8px; font-size: 0.8rem;" onclick="fitToScreen()">Dopasuj</button>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem;">
+            <button class="btn btn-download" id="modalDownloadBtn">⬇ Pobierz plik</button>
+            <button class="close-btn" onclick="closeModal()">✕ Zamknij</button>
+        </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+</div>
+
+<script>
+    // =========================================================================
+    // KONFIGURACJA REPOZYTORIUM (UZUPEŁNIJ SWOJE DANE PONIŻEJ)
+    // =========================================================================
+    const CONFIG = {
+        USERNAME: 'TWOJA_NAZWA_UZYTKOWNIKA',
+        REPO: 'NAZWA_TWOJEGO_REPOZYTORIUM',
+        BRANCH: 'main',
+        IGNORED_FILES: ['index.html', 'README.md', '.gitignore', '.nojekyll']
+    };
+    // =========================================================================
+
+    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+    const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+    const VIDEO_EXTS = ['mp4', 'webm', 'ogv', 'mov', 'm4v'];
+
+    let allFoldersData = {};
+    let currentZoom = 100;
+    let naturalImgWidth = 0;
+
+    async function fetchRepoFiles() {
+        const statusEl = document.getElementById('status');
+        const apiUrl = `https://api.github.com/repos/${CONFIG.USERNAME}/${CONFIG.REPO}/git/trees/${CONFIG.BRANCH}?recursive=1`;
+
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`Błąd połączenia z GitHub (${response.status}). Sprawdź nazwę użytkownika, repozytorium i czy repozytorium jest publiczne.`);
+            }
+            const data = await response.json();
+            processTree(data.tree);
+            statusEl.style.display = 'none';
+        } catch (error) {
+            statusEl.innerHTML = `<span style="color: #ef4444; font-weight: 600;">${error.message}</span>`;
+        }
+    }
+
+    function processTree(tree) {
+        const folders = {};
+
+        tree.forEach(item => {
+            if (item.type !== 'blob') return;
+            
+            const pathParts = item.path.split('/');
+            const fileName = pathParts.pop();
+
+            if (CONFIG.IGNORED_FILES.includes(fileName) || fileName.startsWith('.')) return;
+
+            const folderName = pathParts.length > 0 ? pathParts.join(' / ') : '📁 Folder główny';
+            
+            if (!folders[folderName]) {
+                folders[folderName] = [];
+            }
+
+            const ext = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : 'plik';
+            const rawUrl = `https://raw.githubusercontent.com/${CONFIG.USERNAME}/${CONFIG.REPO}/${CONFIG.BRANCH}/${encodeURI(item.path)}`;
+
+            folders[folderName].push({
+                name: fileName,
+                path: item.path,
+                ext: ext,
+                url: rawUrl
+            });
+        });
+
+        const sortedFolderNames = Object.keys(folders).sort((a, b) => 
+            a.localeCompare(b, 'pl', { numeric: true, sensitivity: 'base' })
+        );
+
+        sortedFolderNames.forEach(folder => {
+            folders[folder].sort((a, b) => 
+                a.name.localeCompare(b.name, 'pl', { numeric: true, sensitivity: 'base' })
+            );
+            allFoldersData[folder] = folders[folder];
+        });
+
+        renderFolders(allFoldersData);
+    }
+
+    function getFileIcon(ext) {
+        if (AUDIO_EXTS.includes(ext)) return '🎵';
+        if (VIDEO_EXTS.includes(ext)) return '🎬';
+        if (['pdf'].includes(ext)) return '📕';
+        if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return '📘';
+        if (['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return '📗';
+        if (['ppt', 'pptx', 'odp'].includes(ext)) return '📙';
+        if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '📦';
+        if (['txt', 'md'].includes(ext)) return '📝';
+        return '📄';
+    }
+
+    function renderFolders(foldersData) {
+        const contentEl = document.getElementById('content');
+        contentEl.innerHTML = '';
+
+        const folderEntries = Object.entries(foldersData);
+        if (folderEntries.length === 0) {
+            contentEl.innerHTML = '<p style="text-align:center; color:#64748b;">Brak plików do wyświetlenia.</p>';
+            return;
+        }
+
+        folderEntries.forEach(([folderName, files]) => {
+            const section = document.createElement('div');
+            section.className = 'folder-section';
+
+            const header = document.createElement('div');
+            header.className = 'folder-header';
+            header.innerHTML = `
+                <div class="folder-title">
+                    <span>📂</span>
+                    <span>${folderName}</span>
+                </div>
+                <span class="folder-count">${files.length}</span>
+            `;
+
+            const grid = document.createElement('div');
+            grid.className = 'files-grid';
+
+            header.onclick = () => grid.classList.toggle('collapsed');
+
+            files.forEach(file => {
+                const isImage = IMAGE_EXTS.includes(file.ext);
+                const isVideo = VIDEO_EXTS.includes(file.ext);
+                const isAudio = AUDIO_EXTS.includes(file.ext);
+
+                const card = document.createElement('div');
+                card.className = 'file-card';
+
+                let previewHtml = '';
+                if (isImage) {
+                    previewHtml = `<img src="${file.url}" alt="${file.name}" loading="lazy">`;
+                } else if (isVideo) {
+                    previewHtml = `
+                        <video src="${file.url}#t=0.5" preload="metadata" muted playsinline></video>
+                        <span class="media-badge">▶ ${file.ext}</span>
+                    `;
+                } else if (isAudio) {
+                    previewHtml = `
+                        <div class="file-icon">
+                            <span>🎵</span>
+                            <span class="file-ext-badge">${file.ext}</span>
+                        </div>
+                        <span class="media-badge">♪ audio</span>
+                    `;
+                } else {
+                    previewHtml = `
+                        <div class="file-icon">
+                            <span>${getFileIcon(file.ext)}</span>
+                            <span class="file-ext-badge">${file.ext}</span>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="file-preview" onclick='openPreview(${JSON.stringify(file)})'>
+                        ${previewHtml}
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="file-actions">
+                            <button class="btn btn-view" onclick='openPreview(${JSON.stringify(file)})'>Podgląd</button>
+                            <button class="btn btn-download" onclick='forceDownload("${file.url}", "${file.name}")'>Pobierz</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            section.appendChild(header);
+            section.appendChild(grid);
+            contentEl.appendChild(section);
+        });
+    }
+
+    async function forceDownload(url, filename) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
+            a.remove();
+        } catch (err) {
+            window.open(url, '_blank');
+        }
+    }
+
+    async function openPreview(file) {
+        const modal = document.getElementById('previewModal');
+        const modalBody = document.getElementById('modalBody');
+        const zoomControls = document.getElementById('zoomControls');
+        const modalFileName = document.getElementById('modalFileName');
+        const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+
+        modalFileName.textContent = file.name;
+        modalDownloadBtn.onclick = () => forceDownload(file.url, file.name);
+        modalBody.innerHTML = '<div style="color:white;">Ładowanie podglądu...</div>';
+        zoomControls.style.display = 'none';
+        modal.classList.add('active');
+
+        const isImage = IMAGE_EXTS.includes(file.ext);
+        const isAudio = AUDIO_EXTS.includes(file.ext);
+        const isVideo = VIDEO_EXTS.includes(file.ext);
+
+        if (isImage) {
+            zoomControls.style.display = 'flex';
+            const img = new Image();
+            img.id = 'modalImage';
+            img.src = file.url;
+            img.onload = () => {
+                naturalImgWidth = img.naturalWidth;
+                modalBody.innerHTML = '';
+                modalBody.appendChild(img);
+                fitToScreen();
+            };
+        } else if (isAudio) {
+            modalBody.innerHTML = `
+                <div class="audio-player-box">
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎵</div>
+                    <div style="font-weight: 600; font-size: 1.05rem; word-break: break-word;">${file.name}</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.2rem;">Format: .${file.ext}</div>
+                    <audio id="modalAudio" controls autoplay preload="metadata" src="${file.url}"></audio>
+                </div>
+            `;
+        } else if (isVideo) {
+            modalBody.innerHTML = `
+                <video id="modalVideo" controls autoplay playsinline preload="metadata" src="${file.url}"></video>
+            `;
+        } else if (file.ext === 'pdf') {
+            const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(file.url)}&embedded=true`;
+            modalBody.innerHTML = `<iframe id="modalIframe" src="${viewerUrl}"></iframe>`;
+        } else if (['doc', 'docx', 'odt', 'xls', 'xlsx', 'ods', 'ppt', 'pptx'].includes(file.ext)) {
+            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(file.url)}`;
+            modalBody.innerHTML = `<iframe id="modalIframe" src="${viewerUrl}"></iframe>`;
+        } else if (file.ext === 'csv') {
+            try {
+                const res = await fetch(file.url);
+                const text = await res.text();
+                const rows = text.trim().split('\n').map(row => row.split(/[,;]/));
+                let tableHtml = '<div id="modalCsvContainer"><table class="csv-table">';
+                rows.forEach((row, idx) => {
+                    const tag = idx === 0 ? 'th' : 'td';
+                    tableHtml += '<tr>' + row.map(cell => `<${tag}>${cell.replace(/^"|"$/g, '')}</${tag}>`).join('') + '</tr>';
+                });
+                tableHtml += '</table></div>';
+                modalBody.innerHTML = tableHtml;
+            } catch (e) {
+                modalBody.innerHTML = `<div style="color:white; text-align:center;">Nie udało się wczytać tabeli CSV. Kliknij "Pobierz plik".</div>`;
+            }
+        } else if (file.ext === 'txt') {
+            const res = await fetch(file.url);
+            const text = await res.text();
+            modalBody.innerHTML = `<pre style="background:white; color:#1e293b; padding:1.5rem; border-radius:8px; max-width:90%; max-height:90%; overflow:auto; white-space:pre-wrap;">${text}</pre>`;
+        } else {
+            modalBody.innerHTML = `
+                <div style="text-align:center; color:white;">
+                    <div style="font-size:4rem; margin-bottom:1rem;">${getFileIcon(file.ext)}</div>
+                    <p style="margin-bottom:1.5rem;">Podgląd w przeglądarce dla formatu <strong>.${file.ext}</strong> nie jest obsługiwany.</p>
+                    <button class="btn btn-download" style="padding:0.75rem 1.5rem; font-size:1rem;" onclick='forceDownload("${file.url}", "${file.name}")'>⬇ Pobierz plik na urządzenie</button>
+                </div>
+            `;
+        }
+    }
+
+    function closeModal() {
+        const audio = document.getElementById('modalAudio');
+        const video = document.getElementById('modalVideo');
+        if (audio) audio.pause();
+        if (video) video.pause();
+
+        document.getElementById('previewModal').classList.remove('active');
+        document.getElementById('modalBody').innerHTML = '';
+    }
+
+    function updateImageZoom() {
+        const img = document.getElementById('modalImage');
+        const zoomInput = document.getElementById('zoomPercent');
+        if (!img || !naturalImgWidth) return;
+
+        currentZoom = Math.max(10, Math.min(500, Math.round(currentZoom)));
+        zoomInput.value = currentZoom;
+        img.style.width = (naturalImgWidth * (currentZoom / 100)) + 'px';
+    }
+
+    function changeZoom(delta) {
+        currentZoom += delta;
+        updateImageZoom();
+    }
+
+    function setExactZoom(value) {
+        const parsed = parseInt(value, 10);
+        if (!isNaN(parsed)) {
+            currentZoom = parsed;
+            updateImageZoom();
+        }
+    }
+
+    function fitToScreen() {
+        const modalBody = document.getElementById('modalBody');
+        if (!naturalImgWidth) return;
+        const availableWidth = modalBody.clientWidth - 60;
+        const ratio = (availableWidth / naturalImgWidth) * 100;
+        currentZoom = ratio < 100 ? Math.floor(ratio) : 100;
+        updateImageZoom();
+    }
+
+    document.getElementById('modalBody').addEventListener('wheel', function(e) {
+        const img = document.getElementById('modalImage');
+        if (img && document.getElementById('previewModal').classList.contains('active')) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 10 : -10;
+            changeZoom(delta);
+        }
+    }, { passive: false });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+            renderFolders(allFoldersData);
+            return;
+        }
+
+        const filtered = {};
+        for (const [folder, files] of Object.entries(allFoldersData)) {
+            if (folder.toLowerCase().includes(query)) {
+                filtered[folder] = files;
+            } else {
+                const matchingFiles = files.filter(f => f.name.toLowerCase().includes(query));
+                if (matchingFiles.length > 0) {
+                    filtered[folder] = matchingFiles;
+                }
+            }
+        }
+        renderFolders(filtered);
+    });
+
+    fetchRepoFiles();
+</script>
+
+</body>
+</html>
